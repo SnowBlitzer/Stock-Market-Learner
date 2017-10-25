@@ -1,6 +1,6 @@
 # Stock-Market-Learner
 
-##Description
+## Description
 
 The stock market is a volatile system that is the center of much of the world’s economy. Many people rely on it to earn money for retirement or work it as a full time job, living strictly off their earnings as either a day trader or working for a financial firm. The possibility of hitting it big with one good decision, many people take extreme chances with money, trying to get a huge return in investment.
 
@@ -8,21 +8,21 @@ Our proposed project is to build a system that will learn off of stock market da
 
 The challenge of this is world events are a huge driving force on how people decide on if to buy or sell stocks. Determining if there is enough data in just historic stock data to train a model that is well informed enough to give accurate results is something that our model can help answer.
 
-##Literature
+## Literature
 
 Most papers on stock market prediction seem to use the support vector machine (SVM) algorithm to make predictions. [3] Many are testing combinations of  SVM with other algorithms to get the best results, such as genetic algorithms. [1][4] Some research has shown that other options, such as neural networks [2] result in more accurate results. This is all dependent on the range and amount of data used in each test case. Many of these techniques have relatively high accuracy without considering external events, with hit rates for predictions of over 60%.
 
-##Algorithms
+## Algorithms
 
 This is something that will need a further research, and possible testing of multiple options. SVM seems to be accurate and well used in the field, but other options would also be of interest would be using random forest, q learners, and neural networks. Considerations for computational resources, time, and constraints on available data will have to be looked into before a decision can be made on which algorithm will work best for our project. There is also a possibility of comparing between two algorithms to see which is the most accurate with our chosen companies.
 
-##Analysis
+## Analysis
 
 The stock market is always producing new data. With the extensiveness of historic data available to us, there is no shortage of training data.
 
 To see how well our project works, we can stop our training date a few months in the past and use the most recent stock market data to see if our predictions are correct. e.g. Train our model on data up to August 2017 for certain companies and see if we can predict changes that happened in September and October. Determining what level of accuracy would actually make the predictions useful will be a challenge, as if the model can predict very large increases very accurately but not recognize small decreases, the user would gain more than lost, and still have a net increase.
 
-##Data Set
+## Data Set
 
 Georgia Tech has a open data set used for their machine learning for trading course. It tracks four different companies stock information from August of 2010 to August of 2017. It contains date, open and close price, high and low price, and volume of trades on each company. There are also multiple APIs and databases available for real time and historic stock market data.
 
@@ -30,7 +30,7 @@ GA Tech: https://github.com/angelmtenor/ML4T
 Alpha Vantage: https://www.alphavantage.co/
 Quandl: https://www.quandl.com/data/EOD-End-of-Day-US-Stock-Prices
 
-##Timeline
+## Timeline
 
 Events given at each date represent things to be done by those dates unless stated that they would be started then
 
@@ -48,7 +48,7 @@ November 30: Final analysis, compare results across trials, start writing final 
 
 Due date: December 10, 2017
 
-##References
+## References
 
 [1] Kazem, Ahmad, et al. “Support Vector Regression with Chaos-Based Firefly Algorithm for Stock Market Price Forecasting.” Applied Soft Computing, vol. 13, 8 Oct. 2012, pp. 947–958.
 
