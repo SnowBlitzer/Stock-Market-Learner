@@ -1,17 +1,19 @@
 import csv
 import json
-import _mysql
+import MySQLdb
 
-TICKERS = ['GOOGL', 'AAPL','MSFT', 'AMZN']
+TICKERS = ['GOOGL','MSFT','AAPL','AMZN']
 INDICATORS = ['3. low', '2. high','1. open', '4. close','SMA','EMA','ADX','RSI']
 
 def converter():
 
-    conn = _mysql.connect('data-mining-stock-learner', user='snow', password='stocklearnerpass')
+    conn = MySQLdb.connect(host='35.199.8.217', db='stocks', user='snow', passwd='stocklearnerpass')
+    print "Connected"
     curse = conn.cursor()
     curse.execute('USE stocks')
+    t = 2
     for company in TICKERS:
-        with open('./results/'+company+'combo.json', 'r') as reader:
+        with open('./'+company+'combo.json', 'r') as reader:
             data = json.load(reader)
 
         data = data['Time Series (Daily)']
@@ -19,23 +21,28 @@ def converter():
         for stock in data:
             stockList = [stock]
             c = 0
-            for indicators in data[stock]:
+            for indicators in INDICATORS:
                 if indicators == '5. volume':
                     continue
                 try:
-                    stockList.append(data[stock][INDICATORS[c]])
+                    stockList.append(float(data[stock][INDICATORS[c]]))
                 except:
                     stockList.append(None)
 
                 c += 1
 
-            cursor.execute("insert into indexes values \
-            ('date', 'low', 'high', 'open', 'close', 'SMA', 'EMA', 'RSI', 'ADX','tickerID'),\
-            (%s, %s, %s, %s, %s, %s ,%s, %s)", (stockList[0],stockList[1],stockList[2],stockList[3],\
-            stockList[4],stockList[5],stockList[6],stockList[7],stockList[8], 1))
+	    #print c
+	    #print stockList
+            curse.execute("INSERT INTO indexes \
+            (date, low, high, open, close, SMA, EMA, RSI, ADX, tickerID) \
+	    VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",\
+	    (stockList[0],stockList[1],stockList[2],stockList[3], stockList[4]\
+	    ,stockList[5],stockList[6],stockList[7],stockList[8], t))
+
             conn.commit()
             #print stockList
 
+        t+=1
     conn.close()
 
 
