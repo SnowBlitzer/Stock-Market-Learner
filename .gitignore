@@ -2,3 +2,4 @@
 .Python
 env*
 alphaAPI/results/
+*/__pycache__/*

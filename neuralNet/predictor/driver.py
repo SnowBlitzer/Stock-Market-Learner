@@ -15,14 +15,13 @@ def Main(args):
     #when making a prediction
     num_past_days = 15
     plot_data(frame)
-
     regressor = KNeighborsRegressor(n_neighbors=5) #R
     predictor = StockPredictor(regressor, nPastDays=num_past_days)#sp
     #Learn the dataset and then display performance statistics
-    predictor.Learn(frame)
-    predictor.TestPerformance()
+    predictor.learn(frame)
+    predictor.test_performance()
     #Perform prediction for a specified date range
-    prediction = predictor.PredictDate(args[1], args[2], args[3])
+    prediction = predictor.predict_date(args[1], args[2], args[3])
     #Keep track of number of predicted results for plot
     num_predictions = prediction.shape[0]
     #Append the predicted results to the actual results
@@ -35,5 +34,4 @@ def Main(args):
 #Main entry point for the program
 if __name__ == "__main__":
     #Main(sys.argv[1:])
-    #sys.argv[0]
-    p, n = Main(["GOOGL", '2005-09-30', '2005-10-31', 'weekly'])
+    p, n = Main([sys.argv[1], sys.argv[2], sys.argv[3], 'weekly'])

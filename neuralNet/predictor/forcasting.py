@@ -95,7 +95,7 @@ def grab_data(ticker):
     CURSE.close()
     CONN.close()
 
-    return frame.drop('Date', axis = 1)
+    return frame.drop('Date', axis=1)
 
 
 #Gives a list of timestamps from the start date to the end date
@@ -104,10 +104,10 @@ def grab_data(ticker):
 #endDate:       The end date as a string year-month-day
 #weekends:      True if weekends should be included; false otherwise
 #return:        A numpy array of timestamps
-def date_range(startDate, endDate, weekends=False):
+def date_range(start_date, end_date, weekends=False):
     #The start and end date
-    start = datetime.strptime(startDate, '%Y-%m-%d')
-    end = datetime.strptime(endDate, '%Y-%m-%d')
+    start = datetime.strptime(start_date, '%Y-%m-%d')
+    end = datetime.strptime(end_date, '%Y-%m-%d')
     #Invalid start and end dates
     if start > end:
         raise ValueError("The start date cannot be later than the end date.")
@@ -128,36 +128,35 @@ def date_range(startDate, endDate, weekends=False):
 #
 #startDate:     The start date as a datetime object
 #weekends:      True if weekends should counted; false otherwise
-def date_prev_day(startDate, weekends=False):
+def date_prev_day(start_date, weekends=False):
     #One day
     day = timedelta(1)
-    cd = datetime.fromtimestamp(startDate)
+    current_date = datetime.fromtimestamp(start_date)
     while True:
-        cd = cd - day
-        if weekends or (cd.date().weekday() != 5 and cd.date().weekday() != 6):
-            return cd.timestamp()
+        current_date = current_date - day
+        if weekends or (current_date.date().weekday() != 5 and current_date.date().weekday() != 6):
+            return current_date.timestamp()
     #Should never happen
     return None
 
-#A class that predicts stock prices based on historical stock data
 class StockPredictor:
-
+    """A class that predicts stock prices based on historical stock data"""
     #The (scaled) data frame
-    D = None
+    scaled_df = None
     #Unscaled timestamp data
     DTS = None
     #The data matrix
-    A = None
+    data_matrix = None
     #Target value matrix
-    y = None
+    targ_matrix = None
     #Corresponding columns for target values
-    targCols = None
+    targ_cols = None
     #Number of previous days of data to use
     npd = 1
     #The regressor model
-    R = None
+    reg_model = None
     #Object to scale input data
-    S = None
+    scaled_input = None
 
     #Constructor
     #nPrevDays:     The number of past days to include
@@ -165,63 +164,70 @@ class StockPredictor:
     #rmodel:        The regressor model to use (sklearn)
     #nPastDays:     The number of past days in each feature
     #scaler:        The scaler object used to scale the data (sklearn)
-    def __init__(self, rmodel, nPastDays = 1, scaler = StandardScaler()):
+    def __init__(self, rmodel, nPastDays=1, scaler=StandardScaler()):
         self.npd = nPastDays
-        self.R = rmodel
-        self.S = scaler
+        self.reg_model = rmodel
+        self.scaled_input = scaler
 
-    #Extracts features from stock market data
-    #
-    #D:         A dataframe from ParseData
-    #ret:       The data matrix of samples
-    def _ExtractFeat(self, D):
+    def extract_feat(self, dataframe):
+        """
+        Extracts features from stock market data
+
+        dataframe:         A dataframe from ParseData
+        ret:               The data matrix of samples
+        """
         #One row per day of stock data
-        m = D.shape[0]
+        day_rows = dataframe.shape[0]
         #Open, High, Low, and Close for past n days + timestamp and volume
-        n = self._GetNumFeatures()
-        B = np.zeros([m, n])
+        num_days = self.get_num_features()
+        holder_frame = np.zeros([day_rows, num_days])
         #Preserve order of spreadsheet
-        for i in range(m - 1, -1, -1):
-            self._GetSample(B[i], i, D)
+        for i in range(day_rows - 1, -1, -1):
+            self.get_sample(holder_frame[i], i, dataframe)
         #Return the internal numpy array
-        return B
+        return holder_frame
 
-    #Extracts the target values from stock market data
-    #
-    #D:         A dataframe from ParseData
-    #ret:       The data matrix of targets and the
+    def extract_targ(self, dataframe):
+        """
+        Extracts the target values from stock market data
 
-    def _ExtractTarg(self, D):
+        data_frame:     A dataframe from ParseData
+        ret:            The data matrix of targets and the
+        """
         #Timestamp column is not predicted
-        tmp = D.drop('Timestamp', axis = 1)
+        tmp_frame = dataframe.drop('Timestamp', axis=1)
         #Return the internal numpy array
-        return tmp.values, tmp.columns
+        return tmp_frame.values, tmp_frame.columns
 
-    #Get the number of features in the data matrix
-    #
-    #n:         The number of previous days to include
-    #           self.npd is  used if n is None
-    #ret:       The number of features in the data matrix
-    def _GetNumFeatures(self, n = None):
-        if(n is None):
-            n = self.npd
-        return n * 7 + 1
+    def get_num_features(self, num_days=None):
+        """
+        Get the number of features in the data matrix
 
-    #Get the sample for a specific row in the dataframe.
-    #A sample consists of the current timestamp and the data from
-    #the past n rows of the dataframe
-    #
-    #r:         The array to fill with data
-    #i:         The index of the row for which to build a sample
-    #df:        The dataframe to use
-    #return;    r
-    def _GetSample(self, r, i, df):
+        num_days:  The number of previous days to include
+                   self.npd is  used if n is None
+        ret:       The number of features in the data matrix
+        """
+        if num_days is None:
+            num_days = self.npd
+        return num_days * 7 + 1
+
+    def get_sample(self, arr, i, dataframe):
+        """
+        Get the sample for a specific row in the dataframe.
+        A sample consists of the current timestamp and the data from
+        the past n rows of the dataframe
+
+        arr:       The array to fill with data
+        i:         The index of the row for which to build a sample
+        df:        The dataframe to use
+        return;    arr
+        """
         #First value is the timestamp
-        r[0] = df['Timestamp'].values[i]
+        arr[0] = dataframe['Timestamp'].values[i]
         #The number of columns in df
-        n = df.shape[1]
+        cols = dataframe.shape[1]
         #The last valid index
-        lim = df.shape[0]
+        lim = dataframe.shape[0]
         #Each sample contains the past n days of stock data; for non-existing data
         #repeat last available sample
         #Format of row:
@@ -230,135 +236,138 @@ class StockPredictor:
             #Subsequent rows contain older data in the spreadsheet
             ind = i + j + 1
             #If there is no older data, duplicate the oldest available values
-            if(ind >= lim):
+            if ind >= lim:
                 ind = lim - 1
             #Add all columns from row[ind]
-            for k, c in enumerate(df.columns):
+            for k, c in enumerate(dataframe.columns):
                 #+ 1 is needed as timestamp is at index 0
-                r[k + 1 + n * j] = df[c].values[ind]
-        return r
+                arr[k + 1 + cols * j] = dataframe[c].values[ind]
+        return arr
 
-    #Attempts to learn the stock market data
-    #given a dataframe taken from ParseData
-    #
-    #D:         A dataframe from ParseData
-    def Learn(self, D):
+    def learn(self, dataframe):
+        """
+        Attempts to learn the stock market data
+        given a dataframe taken from ParseData
+
+        dataframe:         A dataframe from ParseData
+        """
         #Keep track of the currently learned data
-        self.D = D.copy()
+        self.scaled_df = dataframe.copy()
         #Keep track of old timestamps for indexing
-        self.DTS = np.copy(D.Timestamp.values)
+        self.DTS = np.copy(dataframe.Timestamp.values)
         #Scale the data
-        self.D[self.D.columns] = self.S.fit_transform(self.D)
+        self.scaled_df[self.scaled_df.columns] = self.scaled_input.fit_transform(self.scaled_df)
         #Get features from the data frame
-        self.A = self._ExtractFeat(self.D)
+        self.data_matrix = self.extract_feat(self.scaled_df)
         #Get the target values and their corresponding column names
-        self.y, self.targCols = self._ExtractTarg(self.D)
+        self.targ_matrix, self.targ_cols = self.extract_targ(self.scaled_df)
         #Create the regressor model and fit it
-        self.R.fit(self.A, self.y)
+        self.reg_model.fit(self.data_matrix, self.targ_matrix)
 
-    #Predicts values for each row of the dataframe. Can be used to
-    #estimate performance of the model
-    #
-    #df:            The dataframe for which to make prediction
-    #return:        A dataframe containing the predictions
-    def PredictDF(self, df):
+    def predict_frame(self, dataframe):
+        """
+        Predicts values for each row of the dataframe. Can be used to
+        estimate performance of the model
+
+        dataframe:     The dataframe for which to make prediction
+        return:        A dataframe containing the predictions
+        """
         #Make a local copy to prevent modifying df
-        D = df.copy()
+        local_dataframe = dataframe.copy()
         #Scale the input data like the training data
-        D[D.columns] = self.S.transform()
+        local_dataframe[local_dataframe.columns] = self.scaled_input.transform()
         #Get features
-        A = self._ExtractFeat(D)
+        features = self.extract_feat(local_dataframe)
         #Construct a dataframe to contain the predictions
         #Column order was saved earlier
-        P = pd.DataFrame(index = range(A.shape[0]), columns = self.targCols)
+        predict_frame = pd.DataFrame(index=range(features.shape[0]), columns=self.targ_cols)
         #Perform prediction
-        P[P.columns] = self.R.predict(A)
+        predict_frame[predict_frame.columns] = self.reg_model.predict(features)
         #Add the timestamp (already scaled from above)
-        P['Timestamp'] = D['Timestamp'].values
+        predict_frame['Timestamp'] = local_dataframe['Timestamp'].values
         #Scale the data back to original range
-        P[P.columns] = self.S.inverse_transform(P)
-        return P
+        predict_frame[predict_frame.columns] = self.scaled_input.inverse_transform(predict_frame)
+        return predict_frame
 
-    #Predict the stock price during a specified time
-    #
-    #startDate:     The start date as a string in yyyy-mm-dd format
-    #endDate:       The end date as a string yyyy-mm-dd format
-    #period:		'daily', 'weekly', or 'monthly' for the time period
-    #				between predictions
-    #return:        A dataframe containing the predictions or
-    def PredictDate(self, startDate, endDate, period = 'weekly'):
+    def predict_date(self, start_date, end_date, period='weekly'):
+        """
+        Predict the stock price during a specified time
+
+        start_date:     The start date as a string in yyyy-mm-dd format
+        end_date:       The end date as a string yyyy-mm-dd format
+        period:		   'daily', 'weekly', or 'monthly' for the time period
+        				between predictions
+        #return:        A dataframe containing the predictions or
+        """
         #Create the range of timestamps and reverse them
-        ts = date_range(startDate, endDate, period)[::-1]
-        m = ts.shape[0]
+        time = date_range(start_date, end_date, period)[::-1]
+        size = time.shape[0]
         #Prediction is based on data prior to start date
         #Get timestamp of previous day
-        prevts = date_prev_day(ts[-1])
+        prevts = date_prev_day(time[-1])
         #Test if there is enough data to continue
         try:
             ind = np.where(self.DTS == prevts)[0][0]
         except IndexError:
             return None
         #There is enough data to perform prediction; allocate new data frame
-        P = pd.DataFrame(np.zeros([m, self.D.shape[1]]), index = range(m), columns = self.D.columns)
+        predict = pd.DataFrame(np.zeros([size, self.scaled_df.shape[1]]), \
+            index=range(size), columns=self.scaled_df.columns)
         #Add in the timestamp column so that it can be scaled properly
-        P['Timestamp'] = ts
+        predict['Timestamp'] = time
         #Scale the timestamp (other fields are 0)
-        P[P.columns] = self.S.transform(P)
+        predict[predict.columns] = self.scaled_input.transform(predict)
         #B is to be the data matrix of features
-        B = np.zeros([1, self._GetNumFeatures()])
+        feats = np.zeros([1, self.get_num_features()])
         #Add extra last entries for past existing data
         for i in range(self.npd):
             #If the current index does not exist, repeat the last valid data
-            curInd = ind - self.npd + i
-            if(curInd > self.D.shape[0]):
-                curInd = curInd - 1
+            cur_ind = ind - self.npd + i
+            if cur_ind > self.scaled_df.shape[0]:
+                cur_ind = cur_ind - 1
             try:
                 #Copy over the past data (already scaled)
-                P.loc[m + i] = self.D.loc[curInd]
+                predict.loc[size + i] = self.scaled_df.loc[cur_ind]
                 print("Worked")
             except KeyError:
                 print("Index out of range")
 
         #Loop until end date is reached
-        for i in range(m - 1, -1, -1):
+        for i in range(size - 1, -1, -1):
             #Create one sample
-            self._GetSample(B[0], i, P)
+            self.get_sample(feats[0], i, predict)
             #Predict the row of the dataframe and save it
-            pred = self.R.predict(B).ravel()
+            pred = self.reg_model.predict(feats).ravel()
             #Fill in the remaining fields into the respective columns
-            for j, k in zip(self.targCols, pred):
-                P.set_value(i, j, k)
+            for j, k in zip(self.targ_cols, pred):
+                predict.set_value(i, j, k)
         #Discard extra rows needed for prediction
-        P = P[0:m]
+        predict = predict[0:size]
         #Scale the dataframe back to the original range
-        P[P.columns] = self.S.inverse_transform(P)
-        return P
+        predict[predict.columns] = self.scaled_input.inverse_transform(predict)
+        return predict
 
-    #Test the predictors performance and
-    #displays results to the screen
-    #
-    #D:             The dataframe for which to make prediction
-    def TestPerformance(self, df = None):
+
+    def test_performance(self, data_frame=None):
+        """
+        Test the predictors performance and
+        displays results to the screen
+
+        D:        The dataframe for which to make prediction
+        """
         #If no dataframe is provided, use the currently learned one
-        if(df is None):
-            D = self.D
+        if data_frame is None:
+            frame = self.scaled_df
         else:
-            D = self.S.transform(df.copy())
+            frame = self.scaled_input.transform(data_frame.copy())
         #Get features from the data frame
-        A = self._ExtractFeat(D)
+        features = self.extract_feat(frame)
         #Get the target values and their corresponding column names
-        y, _ = self._ExtractTarg(D)
+        targ_vals, _ = self.extract_targ(frame)
         #Begin cross validation
         ss = ShuffleSplit(n_splits = 1)
-        for trn, tst in ss.split(A):
-            s1 = self.R.score(A, y)
-            s2 = self.R.score(A[tst], y[tst])
-            s3 = self.R.score(A[trn], y[trn])
+        for trn, tst in ss.split(features):
+            s1 = self.reg_model.score(features, targ_vals)
+            s2 = self.reg_model.score(features[tst], targ_vals[tst])
+            s3 = self.reg_model.score(features[trn], targ_vals[trn])
             print('C-V:\t' + str(s1) + '\nTst:\t' + str(s2) + '\nTrn:\t' + str(s3))
-"""
-if __name__ == "__main__":
-    TICKER = sys.argv[1]
-    data = grab_data(TICKER)
-    plot_data(data)
-    print(data)
-"""
