@@ -57,17 +57,19 @@ def plot_data(frame, pos=None):
     mpl.legend(loc='upper left')
     mpl.show()
 
-def grab_data(ticker):
+def grab_data(ticker, start, end):
     """
     Grabs the data from the database for the selected ticker
     Transforms the data into a pandas array
     """
     ticker_data = []
+    index = str(TICKER_OPTIONS.index(ticker) + 1)
     command = "SELECT Date, High, Low, Open, Close, Volume \
                FROM indexes as ind \
-               WHERE ind.tickerID = 1 \
-               AND ind.date BETWEEN '2004-08-19' AND '2005-09-30' \
-               ORDER BY ind.date ASC"
+               WHERE ind.tickerID = " + index + \
+               " AND ind.date BETWEEN '"
+
+    command += (start + "' AND '" + end + "' ORDER BY ind.date ASC")
 
     CURSE.execute(command)
 
@@ -91,13 +93,13 @@ def grab_data(ticker):
     #Add the newly parsed column to the dataframe
     frame['Timestamp'] = numeric_date
 
-    #Closing DB connections
-    CURSE.close()
-    CONN.close()
-
     return frame.drop('Date', axis=1)
 
 
+def close_con():
+    #Closing DB connections
+    CURSE.close()
+    CONN.close()
 #Gives a list of timestamps from the start date to the end date
 #
 #startDate:     The start date as a string xxxx-xx-xx
@@ -328,7 +330,6 @@ class StockPredictor:
             try:
                 #Copy over the past data (already scaled)
                 predict.loc[size + i] = self.scaled_df.loc[cur_ind]
-                print("Worked")
             except KeyError:
                 print("Index out of range")
 
