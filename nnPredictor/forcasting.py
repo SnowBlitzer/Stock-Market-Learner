@@ -20,9 +20,7 @@ CURSE.execute('USE stocks')
 
 
 def plot_data(frame, pos=None):
-    """
-    Takes a dataframe and plots it
-    """
+    """Takes a dataframe and plots it"""
     if pos is None:
         pos = np.array([])
     #p contains the indices of predicted data; the rest are actual points
@@ -97,16 +95,19 @@ def grab_data(ticker, start, end):
 
 
 def close_con():
-    #Closing DB connections
+    """Closing DB connections"""
     CURSE.close()
     CONN.close()
-#Gives a list of timestamps from the start date to the end date
-#
-#startDate:     The start date as a string xxxx-xx-xx
-#endDate:       The end date as a string year-month-day
-#weekends:      True if weekends should be included; false otherwise
-#return:        A numpy array of timestamps
+
 def date_range(start_date, end_date, weekends=False):
+    """
+    Gives a list of timestamps from the start date to the end date
+
+    startDate:     The start date as a string xxxx-xx-xx
+    endDate:       The end date as a string year-month-day
+    weekends:      True if weekends should be included; false otherwise
+    return:        A numpy array of timestamps
+    """
     #The start and end date
     start = datetime.strptime(start_date, '%Y-%m-%d')
     end = datetime.strptime(end_date, '%Y-%m-%d')
@@ -126,12 +127,13 @@ def date_range(start_date, end_date, weekends=False):
         current = current + day
     return np.array(dates)
 
-#Given a date, returns the previous day
-#
-#startDate:     The start date as a datetime object
-#weekends:      True if weekends should counted; false otherwise
 def date_prev_day(start_date, weekends=False):
-    #One day
+    """
+    Given a date, returns the previous day
+
+    startDate:     The start date as a datetime object
+    weekends:      True if weekends should counted; false otherwise
+    """
     day = timedelta(1)
     current_date = datetime.fromtimestamp(start_date)
     while True:
@@ -160,13 +162,15 @@ class StockPredictor:
     #Object to scale input data
     scaled_input = None
 
-    #Constructor
-    #nPrevDays:     The number of past days to include
-    #               in a sample.
-    #rmodel:        The regressor model to use (sklearn)
-    #nPastDays:     The number of past days in each feature
-    #scaler:        The scaler object used to scale the data (sklearn)
     def __init__(self, rmodel, nPastDays=1, scaler=StandardScaler()):
+        """
+        Constructor
+        nPrevDays:     The number of past days to include
+                       in a sample.
+        rmodel:        The regressor model to use (sklearn)
+        nPastDays:     The number of past days in each feature
+        scaler:        The scaler object used to scale the data (sklearn)
+        """
         self.npd = nPastDays
         self.reg_model = rmodel
         self.scaled_input = scaler
@@ -311,6 +315,7 @@ class StockPredictor:
         try:
             ind = np.where(self.DTS == prevts)[0][0]
         except IndexError:
+            print("Index error")
             return None
         #There is enough data to perform prediction; allocate new data frame
         predict = pd.DataFrame(np.zeros([size, self.scaled_df.shape[1]]), \
@@ -319,14 +324,15 @@ class StockPredictor:
         predict['Timestamp'] = time
         #Scale the timestamp (other fields are 0)
         predict[predict.columns] = self.scaled_input.transform(predict)
-        #B is to be the data matrix of features
+        #Data matrix of features
         feats = np.zeros([1, self.get_num_features()])
         #Add extra last entries for past existing data
         for i in range(self.npd):
-            #If the current index does not exist, repeat the last valid data
+            #have to shift the date down to pull last x days
             cur_ind = ind - self.npd + i
             if cur_ind > self.scaled_df.shape[0]:
                 cur_ind = cur_ind - 1
+            #Checking to make sure we don't try to grab future data
             try:
                 #Copy over the past data (already scaled)
                 predict.loc[size + i] = self.scaled_df.loc[cur_ind]
@@ -354,7 +360,7 @@ class StockPredictor:
         Test the predictors performance and
         displays results to the screen
 
-        D:        The dataframe for which to make prediction
+        data_frame:        The dataframe for which to make prediction
         """
         #If no dataframe is provided, use the currently learned one
         if data_frame is None:
@@ -365,10 +371,11 @@ class StockPredictor:
         features = self.extract_feat(frame)
         #Get the target values and their corresponding column names
         targ_vals, _ = self.extract_targ(frame)
+
         #Begin cross validation
-        ss = ShuffleSplit(n_splits = 1)
-        for trn, tst in ss.split(features):
-            s1 = self.reg_model.score(features, targ_vals)
-            s2 = self.reg_model.score(features[tst], targ_vals[tst])
-            s3 = self.reg_model.score(features[trn], targ_vals[trn])
-            print('C-V:\t' + str(s1) + '\nTst:\t' + str(s2) + '\nTrn:\t' + str(s3))
+        #ss = ShuffleSplit(n_splits = 1)
+        #for trn, tst in ss.split(features):
+        #    s1 = self.reg_model.score(features, targ_vals)
+        #    s2 = self.reg_model.score(features[tst], targ_vals[tst])
+        #    s3 = self.reg_model.score(features[trn], targ_vals[trn])
+        #    print('C-V:\t' + str(s1) + '\nTst:\t' + str(s2) + '\nTrn:\t' + str(s3))
