@@ -3,3 +3,4 @@
 env*
 alphaAPI/results/
 */__pycache__/*
+*.pyc

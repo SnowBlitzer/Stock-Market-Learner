@@ -19,7 +19,7 @@ CURSE = CONN.cursor()
 CURSE.execute('USE stocks')
 
 
-def plot_data(frame, pos=None):
+def plot_data(frame, pos=None, frame2=None, frame3=None):
     """Takes a dataframe and plots it"""
     if pos is None:
         pos = np.array([])
@@ -43,12 +43,17 @@ def plot_data(frame, pos=None):
     #Convert timestamps to strings
     str_timestamp = [datetime.fromtimestamp(i).strftime('%m-%d-%y') for i in tick_marks]
     mpl.figure()
+
     #Plots of the high and low values for the day
-    mpl.plot(timestamp, frame.High.values, color='#7092A8', linewidth=1.618, label='Actual')
+    mpl.plot(timestamp, frame.High.values, color='#7092A8', linewidth=1.618, label='Lead Up')
     #Predicted data was also provided
     if len(pos) > 0:
-        mpl.plot(timestamp[pos], frame.High.values[pos], \
+        timestamp2 = frame2.Timestamp.values
+        mpl.plot(timestamp2, frame2.High.values, \
             color='#6F6F6F', linewidth=1.618, label='Predicted')
+        timestamp3 = frame3.Timestamp.values
+        mpl.plot(timestamp3, frame3.High.values, \
+            color='#7f0000', linewidth=1.618, label='Real')
     #Set the tick marks
     mpl.xticks(tick_marks, str_timestamp, rotation='vertical')
     #Add the label in the upper left
